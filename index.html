@@ -22,7 +22,7 @@
   --radius:10px;--radius-lg:14px;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden}
-body{padding-bottom:70px}
+body{padding-bottom:190px}
 
 /* ── NAV ── */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,15,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:0;z-index:200;height:56px}
@@ -47,8 +47,9 @@ body{padding-bottom:70px}
 .btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,95,95,.3)!important}
 .btn-ghost{background:transparent;color:var(--text3);border:1px solid var(--border)!important}
 .btn-sm{padding:8px 14px;font-size:12px;width:auto}
-/* floating action bar at bottom of gym page */
-.action-bar{position:sticky;bottom:64px;background:var(--bg);padding:10px 0 4px;z-index:10;border-top:1px solid var(--border);margin-top:14px}
+/* floating action bar — always fixed above the nav */
+.action-bar{position:fixed;bottom:56px;left:0;right:0;background:rgba(13,13,15,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:10px 14px 10px;z-index:150;border-top:1px solid var(--border);max-width:100%}
+.action-bar .btn+.btn{margin-top:6px}
 
 /* ── DAY TABS ── */
 .day-tabs{display:flex;gap:4px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
