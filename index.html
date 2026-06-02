@@ -22,7 +22,7 @@
   --radius:10px;--radius-lg:14px;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden}
-body{padding-bottom:190px}
+body{padding-bottom:70px}
 
 /* ── NAV ── */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,15,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:0;z-index:200;height:56px}
@@ -47,9 +47,7 @@ body{padding-bottom:190px}
 .btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,95,95,.3)!important}
 .btn-ghost{background:transparent;color:var(--text3);border:1px solid var(--border)!important}
 .btn-sm{padding:8px 14px;font-size:12px;width:auto}
-/* floating action bar — always fixed above the nav */
-.action-bar{position:fixed;bottom:56px;left:0;right:0;background:rgba(13,13,15,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:10px 14px 10px;z-index:150;border-top:1px solid var(--border);max-width:100%}
-.action-bar .btn+.btn{margin-top:6px}
+/* btn-sm helper */
 
 /* ── DAY TABS ── */
 .day-tabs{display:flex;gap:4px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
@@ -518,16 +516,12 @@ function renderGym(app){
   // Rest banner
   if(S.restActive) renderRestBanner();
 
-  // Exercises
-  day.exercises.forEach(ex=>{
-    initSets(ex.id,ex.sets);
-    app.appendChild(buildExCard(ex));
-  });
+  // ── BOTONES — arriba, antes de los ejercicios ──
+  const btnWrap = mk('div','');
+  btnWrap.style.cssText = 'margin:0 0 14px 0';
 
-  // ── ACTION BAR (bottom) ──
-  const bar=mk('div','action-bar');
   if(!S.sessionActive){
-    const sb=mk('button','btn btn-primary');
+    const sb = mk('button','btn btn-primary');
     sb.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar entrenamiento`;
     sb.onclick=()=>{
       S.sessionActive=true; S.sessionStart=Date.now();
@@ -535,18 +529,28 @@ function renderGym(app){
       day.exercises.forEach(ex=>{initSets(ex.id,ex.sets); S.openEx[ex.id]=true;});
       saveSesh(); render();
     };
-    bar.appendChild(sb);
-  }else{
-    const fb=mk('button','btn btn-success');
-    fb.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Finalizar entrenamiento`;
+    btnWrap.appendChild(sb);
+  } else {
+    const row = mk('div','');
+    row.style.cssText = 'display:flex;gap:8px';
+    const fb = mk('button','btn btn-success');
+    fb.style.flex = '1';
+    fb.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Finalizar`;
     fb.onclick=()=>finishSession();
-    bar.appendChild(fb);
-    const db=mk('button','btn btn-danger');
-    db.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Descartar entreno`;
+    const db = mk('button','btn btn-danger');
+    db.style.flex = '1';
+    db.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Descartar`;
     db.onclick=()=>{if(confirm('¿Descartar? Los datos no se guardarán.'))discardSession(true);};
-    bar.appendChild(db);
+    row.appendChild(fb); row.appendChild(db);
+    btnWrap.appendChild(row);
   }
-  app.appendChild(bar);
+  app.appendChild(btnWrap);
+
+  // Exercises
+  day.exercises.forEach(ex=>{
+    initSets(ex.id,ex.sets);
+    app.appendChild(buildExCard(ex));
+  });
 }
 
 function discardSession(doRender=true){
