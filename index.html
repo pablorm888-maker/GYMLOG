@@ -320,11 +320,12 @@ let ROUTINE = getRoutine();
 
 let S = {
   page:'gym', dayIdx:0,
-  sessionActive:false, sessionStart:null, sessionSets:{},
+  sessionActive:false, sessionStart:null, sessionSets:{}, sessionHiddenEx:[],
   restActive:false, restRemaining:0, restTimer:null,
   workoutTimer:null, workoutElapsed:0,
   openEx:{},
   progressTab:'weight',
+  progressFilters:{measuresFrom:'',measuresTo:'',measuresType:'all',strengthFrom:'',strengthTo:'',strengthMuscle:'all'},
   chartInstances:{},
 };
 
@@ -334,6 +335,7 @@ if(savedSesh){
   S.sessionActive = true;
   S.sessionStart = savedSesh.sessionStart;
   S.sessionSets = savedSesh.sessionSets;
+  S.sessionHiddenEx = savedSesh.sessionHiddenEx || [];
   S.workoutElapsed = Math.floor((Date.now()-savedSesh.sessionStart)/1000);
 }
 
@@ -387,11 +389,15 @@ function initSets(exId,n){
   if(!S.sessionSets[exId]) S.sessionSets[exId]=Array.from({length:n},()=>({weight:'',reps:'',done:false}));
 }
 function saveSesh(){
-  if(S.sessionActive) gw('activeSession',{dayIdx:S.dayIdx,sessionStart:S.sessionStart,sessionSets:S.sessionSets});
+  if(S.sessionActive) gw('activeSession',{dayIdx:S.dayIdx,sessionStart:S.sessionStart,sessionSets:S.sessionSets,sessionHiddenEx:S.sessionHiddenEx});
+}
+function visibleExercises(day){
+  if(!S.sessionActive) return day.exercises;
+  return day.exercises.filter(ex=>!S.sessionHiddenEx.includes(ex.id));
 }
 function countDone(){
   let done=0,total=0;
-  ROUTINE[S.dayIdx].exercises.forEach(ex=>{
+  visibleExercises(ROUTINE[S.dayIdx]).forEach(ex=>{
     (S.sessionSets[ex.id]||[]).forEach(s=>{total++;if(s.done)done++;});
   });
   return{done,total};
@@ -505,7 +511,7 @@ function renderGym(app){
         <div class="stat-label">Series</div>
       </div>
       <div>
-        <div class="stat-val">${day.exercises.length}</div>
+        <div class="stat-val">${visibleExercises(day).length}</div>
         <div class="stat-label">Ejercicios</div>
       </div>
     </div>`;
@@ -525,7 +531,7 @@ function renderGym(app){
     sb.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar entrenamiento`;
     sb.onclick=()=>{
       S.sessionActive=true; S.sessionStart=Date.now();
-      S.workoutElapsed=0; S.sessionSets={};
+      S.workoutElapsed=0; S.sessionSets={}; S.sessionHiddenEx=[];
       day.exercises.forEach(ex=>{initSets(ex.id,ex.sets); S.openEx[ex.id]=true;});
       saveSesh(); render();
     };
@@ -547,7 +553,7 @@ function renderGym(app){
   app.appendChild(btnWrap);
 
   // Exercises
-  day.exercises.forEach(ex=>{
+  visibleExercises(day).forEach(ex=>{
     initSets(ex.id,ex.sets);
     app.appendChild(buildExCard(ex));
   });
@@ -555,9 +561,19 @@ function renderGym(app){
 
 function discardSession(doRender=true){
   stopWorkoutTimer(); skipRest();
-  S.sessionActive=false; S.sessionStart=null; S.sessionSets={}; S.workoutElapsed=0;
+  S.sessionActive=false; S.sessionStart=null; S.sessionSets={}; S.sessionHiddenEx=[]; S.workoutElapsed=0;
   localStorage.removeItem('gl3_activeSession');
   if(doRender)render();
+}
+function removeExerciseFromSession(exId){
+  if(!S.sessionActive)return;
+  if(!confirm('¿Quitar este ejercicio solo de esta sesión?'))return;
+  if(!S.sessionHiddenEx.includes(exId)) S.sessionHiddenEx.push(exId);
+  delete S.sessionSets[exId];
+  delete S.openEx[exId];
+  saveSesh();
+  toast('Ejercicio quitado de esta sesión');
+  render();
 }
 
 function buildExCard(ex){
@@ -577,6 +593,9 @@ function buildExCard(ex){
       <div class="ex-meta">${ex.sets} series · ${ex.repsTarget} reps · desc ${fmt(ex.rest)}</div>
     </div>
     <div class="ex-actions">
+      ${S.sessionActive?`<button class="ex-swap-btn" title="Quitar de esta sesión" onclick="event.stopPropagation();removeExerciseFromSession('${ex.id}')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+      </button>`:''}
       <button class="ex-swap-btn" title="Cambiar ejercicio" onclick="event.stopPropagation();openSwapModal(${S.dayIdx},'${ex.id}')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
       </button>
@@ -723,7 +742,7 @@ function swapExercise(dayIdx, oldExId, newLibId){
 function finishSession(){
   const day=ROUTINE[S.dayIdx];
   let vol=0; const exSum=[];
-  day.exercises.forEach(ex=>{
+  visibleExercises(day).forEach(ex=>{
     const sets=(S.sessionSets[ex.id]||[]).filter(s=>s.done);
     if(sets.length){
       vol+=sets.reduce((a,s)=>a+(parseFloat(s.weight)||0)*(parseInt(s.reps)||0),0);
@@ -808,14 +827,78 @@ function renderProgress(app){
   else renderStrengthTab(app);
 }
 
+function chartEmptyMsg(text){
+  return `<div style="font-size:11px;color:var(--text3);text-align:center;padding:34px 8px;line-height:1.5">${text}</div>`;
+}
+function dateInputToStart(v){return v?new Date(v+'T00:00:00').getTime():null;}
+function dateInputToEnd(v){return v?new Date(v+'T23:59:59').getTime():null;}
+function betweenDates(ts,from,to){
+  const a=dateInputToStart(from), b=dateInputToEnd(to);
+  if(a&&ts<a)return false;
+  if(b&&ts>b)return false;
+  return true;
+}
+function setProgressFilter(k,v){S.progressFilters[k]=v;render();}
+function clearProgressFilters(kind){
+  if(kind==='measures'){S.progressFilters.measuresFrom='';S.progressFilters.measuresTo='';S.progressFilters.measuresType='all';}
+  if(kind==='strength'){S.progressFilters.strengthFrom='';S.progressFilters.strengthTo='';S.progressFilters.strengthMuscle='all';}
+  render();
+}
+function filterCard(kind){
+  if(kind==='measures'){
+    return `<div class="chart-card">
+      <div class="chart-card-title">Filtros</div>
+      <div class="body-form">
+        <div><div class="body-label">Desde</div><input class="body-input" type="date" value="${S.progressFilters.measuresFrom}" onchange="setProgressFilter('measuresFrom',this.value)"></div>
+        <div><div class="body-label">Hasta</div><input class="body-input" type="date" value="${S.progressFilters.measuresTo}" onchange="setProgressFilter('measuresTo',this.value)"></div>
+      </div>
+      <div style="margin:8px 0 12px">
+        <div class="body-label">Tipo</div>
+        <select class="body-input" onchange="setProgressFilter('measuresType',this.value)">
+          ${[
+            ['all','Todos'],['weight','Peso'],['waist','Cintura'],['hip','Cadera'],['chest','Pecho'],['arm','Brazo'],['thigh','Muslo']
+          ].map(o=>`<option value="${o[0]}" ${S.progressFilters.measuresType===o[0]?'selected':''}>${o[1]}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="clearProgressFilters('measures')">Limpiar filtros</button>
+    </div>`;
+  }
+  return `<div class="chart-card">
+    <div class="chart-card-title">Filtros</div>
+    <div class="body-form">
+      <div><div class="body-label">Desde</div><input class="body-input" type="date" value="${S.progressFilters.strengthFrom}" onchange="setProgressFilter('strengthFrom',this.value)"></div>
+      <div><div class="body-label">Hasta</div><input class="body-input" type="date" value="${S.progressFilters.strengthTo}" onchange="setProgressFilter('strengthTo',this.value)"></div>
+      <div><div class="body-label">Músculo</div><select class="body-input" onchange="setProgressFilter('strengthMuscle',this.value)">
+        ${[
+          ['all','Todos'],['legs','Piernas'],['chest','Pecho'],['back','Espalda'],['shoulders','Hombros'],['arms','Brazos'],['core','Core']
+        ].map(o=>`<option value="${o[0]}" ${S.progressFilters.strengthMuscle===o[0]?'selected':''}>${o[1]}</option>`).join('')}
+      </select></div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="clearProgressFilters('strength')">Limpiar filtros</button>
+  </div>`;
+}
+
 function mkChart(id,color,records,labelFn,valFn){
   setTimeout(()=>{
     const ctx=document.getElementById(id);
     if(!ctx||!records.length)return;
+    const r=records.slice(-30);
     S.chartInstances[id]=new Chart(ctx,{
       type:'line',
-      data:{labels:records.slice(-20).map(labelFn),datasets:[{data:records.slice(-20).map(valFn),borderColor:color,backgroundColor:color+'18',borderWidth:2,pointRadius:3,pointBackgroundColor:color,tension:.35,fill:true}]},
+      data:{labels:r.map(labelFn),datasets:[{data:r.map(valFn),borderColor:color,backgroundColor:color+'18',borderWidth:2,pointRadius:3,pointBackgroundColor:color,tension:.35,fill:true}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#55555f',font:{size:9}},grid:{color:'#1c1c20'}},y:{ticks:{color:'#55555f',font:{size:9}},grid:{color:'#1c1c20'},beginAtZero:false}}}
+    });
+  },80);
+}
+function mkMultiChart(id,labels,datasets){
+  setTimeout(()=>{
+    const ctx=document.getElementById(id);
+    const ds=datasets.filter(d=>d.data.some(v=>v!==null&&v!==undefined&&!Number.isNaN(v)));
+    if(!ctx||!labels.length||!ds.length)return;
+    S.chartInstances[id]=new Chart(ctx,{
+      type:'line',
+      data:{labels,datasets:ds.map(d=>({label:d.label,data:d.data,borderColor:d.color,backgroundColor:d.color,pointRadius:3,pointBackgroundColor:d.color,borderWidth:2,tension:.3,spanGaps:true,fill:false}))},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#9999aa',boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{color:'#55555f',font:{size:9}},grid:{color:'#1c1c20'}},y:{ticks:{color:'#55555f',font:{size:9}},grid:{color:'#1c1c20'},beginAtZero:false}}}
     });
   },80);
 }
@@ -823,7 +906,7 @@ function mkChart(id,color,records,labelFn,valFn){
 function renderWeightTab(app){
   const rec=gs('bodyWeight')||[];
   const sec=mk('div','chart-card');
-  sec.innerHTML=`<div class="chart-card-title">Peso corporal · kg</div><div class="chart-wrap"><canvas id="wChart"></canvas></div>`;
+  sec.innerHTML=`<div class="chart-card-title">Peso corporal · kg</div><div class="chart-wrap">${rec.length?'<canvas id="wChart"></canvas>':chartEmptyMsg('Guarda un pesaje para crear el gráfico.')}</div>`;
   app.appendChild(sec); mkChart('wChart','#7c6cff',rec,r=>fmtDs(r.date),r=>r.weight);
 
   const form=mk('div','chart-card');
@@ -846,15 +929,51 @@ function saveWeight(){
   const v=parseFloat(document.getElementById('w-v').value),d=document.getElementById('w-d').value;
   if(!v||!d){toast('Rellena todos los campos');return;}
   const rec=gs('bodyWeight')||[];
-  rec.push({id:Date.now(),weight:v,date:new Date(d).getTime()});
+  rec.push({id:Date.now(),weight:v,date:new Date(d+'T00:00:00').getTime()});
   rec.sort((a,b)=>a.date-b.date); gw('bodyWeight',rec); toast('✅ Peso guardado'); render();
 }
 
 function renderMeasuresTab(app){
-  const rec=gs('bodyMeasures')||[];
+  const allMeasures=gs('bodyMeasures')||[];
+  const allWeights=gs('bodyWeight')||[];
+  const rec=allMeasures.filter(r=>betweenDates(r.date,S.progressFilters.measuresFrom,S.progressFilters.measuresTo));
+  const weights=allWeights.filter(r=>betweenDates(r.date,S.progressFilters.measuresFrom,S.progressFilters.measuresTo));
+  const selected=S.progressFilters.measuresType||'all';
+  const fields=[
+    {key:'weight',label:'Peso',unit:'kg',color:'#7c6cff',source:'weight'},
+    {key:'waist',label:'Cintura',unit:'cm',color:'#3ecf8e',source:'measure'},
+    {key:'hip',label:'Cadera',unit:'cm',color:'#b48cff',source:'measure'},
+    {key:'chest',label:'Pecho',unit:'cm',color:'#f5a623',source:'measure'},
+    {key:'arm',label:'Brazo',unit:'cm',color:'#ff5f5f',source:'measure'},
+    {key:'thigh',label:'Muslo',unit:'cm',color:'#00c8ff',source:'measure'},
+  ];
+  const activeFields=selected==='all'?fields:fields.filter(f=>f.key===selected);
+  const dates=Array.from(new Set([
+    ...rec.map(r=>r.date),
+    ...weights.map(r=>r.date),
+  ])).sort((a,b)=>a-b);
+  const labels=dates.map(fmtDs);
+  const lastMeasureAtDate=(date,key)=>{
+    const m=rec.filter(r=>r.date===date&&r[key]!==null&&r[key]!==undefined).slice(-1)[0];
+    return m?m[key]:null;
+  };
+  const lastWeightAtDate=date=>{
+    const w=weights.filter(r=>r.date===date&&r.weight!==null&&r.weight!==undefined).slice(-1)[0];
+    return w?w.weight:null;
+  };
+
+  app.insertAdjacentHTML('beforeend',filterCard('measures'));
   const sec=mk('div','chart-card');
-  sec.innerHTML=`<div class="chart-card-title">Cintura · cm</div><div class="chart-wrap"><canvas id="mChart"></canvas></div>`;
-  app.appendChild(sec); mkChart('mChart','#3ecf8e',rec.filter(r=>r.waist),r=>fmtDs(r.date),r=>r.waist);
+  const datasets=activeFields.map(f=>({
+    label:f.label,
+    color:f.color,
+    data:dates.map(d=>f.source==='weight'?lastWeightAtDate(d):lastMeasureAtDate(d,f.key))
+  }));
+  const hasData=datasets.some(d=>d.data.some(v=>v!==null&&v!==undefined&&!Number.isNaN(v)));
+  const title=selected==='all'?'Comparativa de progreso · kg/cm':`${activeFields[0]?.label||'Medida'} · ${activeFields[0]?.unit||''}`;
+  sec.innerHTML=`<div class="chart-card-title">${title}</div><div class="chart-wrap">${hasData?'<canvas id="mChart"></canvas>':chartEmptyMsg((allMeasures.length||allWeights.length)?'No hay datos en este periodo para ese filtro.':'Guarda peso o medidas para crear el gráfico.')}</div>`;
+  app.appendChild(sec);
+  mkMultiChart('mChart',labels,datasets);
 
   const form=mk('div','chart-card');
   form.innerHTML=`<div class="chart-card-title">Registrar medidas</div>
@@ -869,13 +988,13 @@ function renderMeasuresTab(app){
     <button class="btn btn-primary btn-sm" onclick="saveMeasures()">Guardar medidas</button>`;
   app.appendChild(form);
 
-  if(rec.length){
+  if(allMeasures.length){
     const hist=mk('div','chart-card');
-    hist.innerHTML=`<div class="chart-card-title">Últimos registros</div>${rec.slice().reverse().slice(0,6).map(r=>`
+    hist.innerHTML=`<div class="chart-card-title">Últimos registros</div>${allMeasures.slice().reverse().slice(0,8).map(r=>`
       <div class="body-hist-row">
         <span class="body-hist-date">${fmtD(r.date)}</span>
-        <div style="display:flex;gap:8px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text2)">
-          ${r.waist?`<span title="Cintura">C:${r.waist}</span>`:''}${r.hip?`<span title="Cadera">Ca:${r.hip}</span>`:''}${r.chest?`<span title="Pecho">P:${r.chest}</span>`:''}${r.arm?`<span title="Brazo">B:${r.arm}</span>`:''}
+        <div style="display:flex;gap:8px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);flex-wrap:wrap;justify-content:flex-end">
+          ${r.waist?`<span title="Cintura">C:${r.waist}</span>`:''}${r.hip?`<span title="Cadera">Ca:${r.hip}</span>`:''}${r.chest?`<span title="Pecho">P:${r.chest}</span>`:''}${r.arm?`<span title="Brazo">B:${r.arm}</span>`:''}${r.thigh?`<span title="Muslo">M:${r.thigh}</span>`:''}
         </div>
         <button class="body-hist-del" onclick="delBodyRec('bodyMeasures',${r.id})">×</button>
       </div>`).join('')}`;
@@ -886,8 +1005,10 @@ function saveMeasures(){
   const gv=id=>{const v=parseFloat(document.getElementById(id)?.value);return isNaN(v)?null:v;};
   const d=document.getElementById('m-d').value;
   if(!d){toast('Selecciona fecha');return;}
+  const item={id:Date.now(),date:new Date(d+'T00:00:00').getTime(),waist:gv('m-w'),hip:gv('m-h'),chest:gv('m-c'),arm:gv('m-a'),thigh:gv('m-t')};
+  if(![item.waist,item.hip,item.chest,item.arm,item.thigh].some(v=>v!==null)){toast('Añade al menos una medida');return;}
   const rec=gs('bodyMeasures')||[];
-  rec.push({id:Date.now(),date:new Date(d).getTime(),waist:gv('m-w'),hip:gv('m-h'),chest:gv('m-c'),arm:gv('m-a'),thigh:gv('m-t')});
+  rec.push(item);
   rec.sort((a,b)=>a.date-b.date); gw('bodyMeasures',rec); toast('✅ Medidas guardadas'); render();
 }
 function delBodyRec(key,id){
@@ -896,31 +1017,20 @@ function delBodyRec(key,id){
 
 function renderPhotosTab(app){
   const photos=gs('bodyPhotos')||[];
+  const form=mk('div','chart-card');
+  form.innerHTML=`<div class="chart-card-title">Registrar fotos</div>
+    <div class="body-form">
+      <div><div class="body-label">Fecha</div><input class="body-input" id="p-d" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="pickProgressPhotos()">Añadir fotos</button>
+    <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:10px">Las fotos se comprimen antes de guardarse para que el navegador pueda conservar más registros.</div>`;
+  app.appendChild(form);
+
   const sec=mk('div','chart-card');
-  sec.innerHTML=`<div class="chart-card-title">Fotos de progreso</div>`;
+  sec.innerHTML=`<div class="chart-card-title">Fotos de progreso · ${photos.length}</div>`;
   const grid=mk('div','photo-grid');
 
-  const addCell=mk('div','photo-add-cell');
-  addCell.innerHTML=`<span class="photo-add-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></span><span class="photo-add-lbl">Añadir foto</span>`;
-  addCell.onclick=()=>{
-    const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.multiple=true;
-    inp.onchange=e=>{
-      Array.from(e.target.files).forEach(file=>{
-        if((gs('bodyPhotos')||[]).length>=30){toast('Máximo 30 fotos');return;}
-        const reader=new FileReader();
-        reader.onload=ev=>{
-          const p2=gs('bodyPhotos')||[];
-          p2.push({id:Date.now()+Math.random(),src:ev.target.result,date:Date.now()});
-          gw('bodyPhotos',p2); render(); toast('📷 Foto añadida');
-        };
-        reader.readAsDataURL(file);
-      });
-    };
-    inp.click();
-  };
-  grid.appendChild(addCell);
-
-  photos.slice().reverse().forEach(p=>{
+  photos.slice().sort((a,b)=>b.date-a.date).forEach(p=>{
     const cell=mk('div','photo-thumb');
     const img=document.createElement('img');img.src=p.src;img.alt='';
     img.onclick=()=>{document.getElementById('pv-img').src=p.src;document.getElementById('photo-viewer').classList.add('open');};
@@ -935,31 +1045,93 @@ function renderPhotosTab(app){
   if(!photos.length){const empty=mk('p','');empty.style.cssText='font-size:11px;color:var(--text3);margin-top:10px;text-align:center';empty.textContent='Sube fotos para comparar tu progreso visual.';sec.appendChild(empty);}
   app.appendChild(sec);
 }
+async function pickProgressPhotos(){
+  const d=document.getElementById('p-d')?.value;
+  if(!d){toast('Selecciona fecha');return;}
+  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.multiple=true;
+  inp.onchange=async e=>{
+    const files=Array.from(e.target.files||[]);
+    if(!files.length)return;
+    const cur=gs('bodyPhotos')||[];
+    if(cur.length+files.length>60){toast('Máximo 60 fotos guardadas');return;}
+    const date=new Date(d+'T00:00:00').getTime();
+    const added=[];
+    try{
+      for(const file of files){
+        const src=await compressPhoto(file);
+        added.push({id:Date.now()+Math.random(),src,date});
+      }
+      const next=[...cur,...added].sort((a,b)=>a.date-b.date);
+      gw('bodyPhotos',next);
+      toast(`📷 ${added.length} foto${added.length===1?'':'s'} guardada${added.length===1?'':'s'}`);
+      render();
+    }catch(err){toast('No se pudo guardar la foto');}
+  };
+  inp.click();
+}
+function compressPhoto(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=reject;
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onerror=reject;
+      img.onload=()=>{
+        const max=1000;
+        let w=img.width,h=img.height;
+        if(w>h&&w>max){h=Math.round(h*max/w);w=max;}
+        else if(h>=w&&h>max){w=Math.round(w*max/h);h=max;}
+        const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+        const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',0.72));
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 function closePV(){document.getElementById('photo-viewer').classList.remove('open');}
 
+function exerciseMuscleGroup(ex){
+  const k=ex.libKey||'', n=(ex.name||'').toLowerCase();
+  if(['prensa','ext_cuadricep','curl_femoral','hip_thrust','abduccion','gemelo'].includes(k))return'legs';
+  if(['press_pecho','apertura_pecho'].includes(k)||n.includes('pecho')||n.includes('apertura'))return'chest';
+  if(['jalon','remo'].includes(k)||n.includes('jalón')||n.includes('remo')||n.includes('dorsal'))return'back';
+  if(['press_hombro','elev_lateral','facepull'].includes(k)||n.includes('hombro')||n.includes('lateral')||n.includes('facepull'))return'shoulders';
+  if(['curl_bicep','extension_tricep'].includes(k)||n.includes('bíceps')||n.includes('bicep')||n.includes('tríceps')||n.includes('tricep'))return'arms';
+  if(k==='core'||n.includes('crunch')||n.includes('piernas')||n.includes('plancha'))return'core';
+  return'all';
+}
 function renderStrengthTab(app){
-  const history=gs('history')||[];
-  if(!history.length){
+  const allHistory=gs('history')||[];
+  app.insertAdjacentHTML('beforeend',filterCard('strength'));
+  const history=allHistory.filter(h=>betweenDates(h.date,S.progressFilters.strengthFrom,S.progressFilters.strengthTo));
+  if(!allHistory.length){
     app.appendChild(mk('div','hist-empty','<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg><br>Completa entrenamientos para ver<br>tu progresión de fuerza.'));
     return;
   }
-  const compounds=[];
-  ROUTINE.forEach(day=>day.exercises.forEach(ex=>{if(ex.type==='compound'&&!compounds.find(c=>c.id===ex.id))compounds.push(ex);}));
-  const withData=compounds.filter(ex=>history.some(h=>h.sets&&h.sets[ex.id]&&h.sets[ex.id].some(s=>s.done&&s.weight))).slice(0,6);
+  const exercises=[];
+  ROUTINE.forEach(day=>day.exercises.forEach(ex=>{if(!exercises.find(e=>e.id===ex.id))exercises.push(ex);}));
+  const selected=S.progressFilters.strengthMuscle||'all';
+  const filteredExercises=exercises.filter(ex=>selected==='all'||exerciseMuscleGroup(ex)===selected);
+  const withData=filteredExercises.filter(ex=>history.some(h=>h.sets&&h.sets[ex.id]&&h.sets[ex.id].some(s=>s.done&&s.weight)));
 
-  if(!withData.length){app.appendChild(mk('div','hist-empty','Apunta pesos en tus series para ver la progresión.'));return;}
-  const colors=['#7c6cff','#3ecf8e','#f5a623','#ff5f5f','#ff6eb4','#00c8ff'];
+  if(!withData.length){app.appendChild(mk('div','hist-empty',history.length?'No hay datos para ese filtro.':'No hay entrenamientos en ese periodo.'));return;}
+  const colors=['#7c6cff','#3ecf8e','#f5a623','#ff5f5f','#ff6eb4','#00c8ff','#b8f000','#ff8a00'];
 
   withData.forEach((ex,ci)=>{
     const pts=history.filter(h=>h.sets&&h.sets[ex.id]).map(h=>{
       const s=(h.sets[ex.id]||[]).filter(s=>s.done&&s.weight);
       const mx=s.length?Math.max(...s.map(s=>parseFloat(s.weight)||0)):null;
       return mx?{date:h.date,val:mx}:null;
-    }).filter(Boolean);
+    }).filter(Boolean).sort((a,b)=>a.date-b.date);
     if(!pts.length)return;
     const mx=Math.max(...pts.map(p=>p.val));
+    const first=pts[0].val,last=pts[pts.length-1].val;
+    const diff=last-first;
+    const diffTxt=`${diff>=0?'+':''}${diff.toFixed(1).replace('.0','')}kg`;
     const sec=mk('div','chart-card');
-    sec.innerHTML=`<div class="chart-card-title">${ex.name} <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent)">max ${mx}kg</span></div><div class="chart-wrap"><canvas id="sc-${ex.id}"></canvas></div>`;
+    sec.innerHTML=`<div class="chart-card-title">${ex.name} <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent)">max ${mx}kg · ${diffTxt}</span></div><div class="chart-wrap"><canvas id="sc-${ex.id}"></canvas></div>`;
     app.appendChild(sec);
     mkChart('sc-'+ex.id,colors[ci%colors.length],pts,p=>fmtDs(p.date),p=>p.val);
   });
@@ -1020,7 +1192,7 @@ function exportJSON(){
   dl('gymlog_historial.json',JSON.stringify({version:3,date:new Date().toISOString(),history:h},null,2),'application/json'); toast('✅ JSON exportado');
 }
 function exportFull(){
-  dl('gymlog_backup.json',JSON.stringify({version:3,date:new Date().toISOString(),history:gs('history')||[],bodyWeight:gs('bodyWeight')||[],bodyMeasures:gs('bodyMeasures')||[],routine:ROUTINE},null,2),'application/json'); toast('✅ Backup exportado');
+  dl('gymlog_backup.json',JSON.stringify({version:3,date:new Date().toISOString(),history:gs('history')||[],bodyWeight:gs('bodyWeight')||[],bodyMeasures:gs('bodyMeasures')||[],bodyPhotos:gs('bodyPhotos')||[],routine:ROUTINE},null,2),'application/json'); toast('✅ Backup exportado');
 }
 function exportRoutine(){
   dl('gymlog_rutina.json',JSON.stringify({version:3,date:new Date().toISOString(),routine:ROUTINE},null,2),'application/json'); toast('✅ Rutina exportada');
@@ -1040,6 +1212,7 @@ function importJSON(){
         if(data.history){const cur=gs('history')||[];gw('history',[...cur,...data.history.filter(h=>!cur.find(c=>c.id===h.id))]);}
         if(data.bodyWeight){const cur=gs('bodyWeight')||[];gw('bodyWeight',[...cur,...data.bodyWeight.filter(r=>!cur.find(c=>c.id===r.id))]);}
         if(data.bodyMeasures){const cur=gs('bodyMeasures')||[];gw('bodyMeasures',[...cur,...data.bodyMeasures.filter(r=>!cur.find(c=>c.id===r.id))]);}
+        if(data.bodyPhotos){const cur=gs('bodyPhotos')||[];gw('bodyPhotos',[...cur,...data.bodyPhotos.filter(r=>!cur.find(c=>c.id===r.id))]);}
         if(data.routine){ROUTINE=data.routine;saveRoutine(ROUTINE);}
         toast('✅ Datos importados'); render();
       }catch{toast('❌ Error al importar');}
@@ -1068,4 +1241,3 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
-
