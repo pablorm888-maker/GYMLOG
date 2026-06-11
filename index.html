@@ -2385,7 +2385,7 @@ canvas{
 }
 
 
-/* S1 ajuste final — eliminar columna Anterior */
+/* S1 ajuste final — eliminar columna  */
 .set-head,
 .set-row{
   grid-template-columns:34px 1fr 1fr 42px!important;
@@ -2740,6 +2740,338 @@ button,input,select,textarea{
   }
 }
 
+
+/* ════════════════════════════════════════════════════════════════════
+   FIX FINAL — TABLA DE SERIES ALINEADA Y SIN 
+   ════════════════════════════════════════════════════════════════════ */
+
+.set-head,
+.set-row{
+  grid-template-columns:28px minmax(78px,1fr) minmax(78px,1fr) 42px 22px!important;
+  gap:7px!important;
+  align-items:center!important;
+}
+
+.set-head{
+  border-bottom:1px solid #303746!important;
+  padding-bottom:7px!important;
+  margin-bottom:8px!important;
+}
+
+.set-head span{
+  display:flex!important;
+  align-items:center!important;
+  min-height:18px!important;
+}
+
+.set-head span:nth-child(4),
+.set-head span:nth-child(5){
+  color:transparent!important;
+}
+
+.set-row{
+  min-height:46px!important;
+  margin-bottom:9px!important;
+}
+
+.set-input{
+  height:40px!important;
+  min-height:40px!important;
+  line-height:40px!important;
+}
+
+.set-done-btn{
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  min-height:38px!important;
+  margin:0!important;
+  align-self:center!important;
+  justify-self:center!important;
+}
+
+.set-del-btn{
+  width:20px!important;
+  height:38px!important;
+  min-width:20px!important;
+  min-height:38px!important;
+  margin:0!important;
+  align-self:center!important;
+  justify-self:center!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  opacity:.42!important;
+  background:transparent!important;
+  border:none!important;
+  color:#8b94a6!important;
+  font-size:13px!important;
+}
+
+.set-del-btn:hover{
+  opacity:.85!important;
+}
+
+.set-prev{
+  display:none!important;
+}
+
+@media(max-width:420px){
+  .set-head,
+  .set-row{
+    grid-template-columns:26px minmax(70px,1fr) minmax(70px,1fr) 40px 18px!important;
+    gap:6px!important;
+  }
+  .sets-area{
+    padding-left:10px!important;
+    padding-right:10px!important;
+  }
+}
+
+
+/* FIX V2 — entreno limpio definitivo */
+.smart-ex-panel,
+.lite-prev,
+.set-prev{
+  display:none!important;
+}
+.set-head,
+.set-row{
+  display:grid!important;
+  grid-template-columns:28px minmax(82px,1fr) minmax(82px,1fr) 42px 22px!important;
+  gap:7px!important;
+  align-items:center!important;
+}
+.set-head{
+  border-bottom:1px solid #303746!important;
+  padding:0 0 7px 0!important;
+  margin:0 0 8px 0!important;
+}
+.set-head span{
+  color:#9fb0d0!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  text-transform:uppercase!important;
+}
+.set-head span:nth-child(4),
+.set-head span:nth-child(5){
+  color:transparent!important;
+}
+.set-row{
+  min-height:46px!important;
+  margin-bottom:9px!important;
+}
+.set-input{
+  height:40px!important;
+  min-height:40px!important;
+  line-height:40px!important;
+  margin:0!important;
+}
+.set-done-btn{
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  min-height:38px!important;
+  margin:0!important;
+  align-self:center!important;
+  justify-self:center!important;
+}
+.set-del-btn{
+  width:20px!important;
+  height:38px!important;
+  min-width:20px!important;
+  min-height:38px!important;
+  margin:0!important;
+  padding:0!important;
+  align-self:center!important;
+  justify-self:center!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  background:transparent!important;
+  border:0!important;
+  color:#737d90!important;
+  opacity:.45!important;
+  font-size:13px!important;
+}
+@media(max-width:420px){
+  .set-head,
+  .set-row{
+    grid-template-columns:24px minmax(68px,1fr) minmax(68px,1fr) 40px 16px!important;
+    gap:6px!important;
+  }
+}
+
+
+/* FIX V3 — clases reales de la tabla de entreno */
+.prev-tag{
+  display:none!important;
+}
+.sets-header{
+  display:grid!important;
+  grid-template-columns:28px minmax(82px,1fr) minmax(82px,1fr) 42px 22px!important;
+  gap:7px!important;
+  align-items:center!important;
+  border-bottom:1px solid #303746!important;
+  padding-bottom:7px!important;
+  margin-bottom:8px!important;
+}
+.sets-header span{
+  color:#9fb0d0!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  text-transform:uppercase!important;
+}
+.sets-header span:nth-child(4),
+.sets-header span:nth-child(5){
+  color:transparent!important;
+}
+.set-line{
+  display:grid!important;
+  grid-template-columns:28px minmax(82px,1fr) minmax(82px,1fr) 42px 22px!important;
+  gap:7px!important;
+  align-items:center!important;
+  min-height:46px!important;
+  margin-bottom:9px!important;
+}
+.set-line .set-input,
+.set-line input{
+  height:40px!important;
+  min-height:40px!important;
+  line-height:40px!important;
+  margin:0!important;
+}
+.set-line .done-btn,
+.set-line .set-done-btn,
+.done-btn{
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  min-height:38px!important;
+  margin:0!important;
+  align-self:center!important;
+  justify-self:center!important;
+}
+.set-line .del-set,
+.set-line .set-del-btn,
+.del-set{
+  width:20px!important;
+  height:38px!important;
+  min-width:20px!important;
+  min-height:38px!important;
+  margin:0!important;
+  padding:0!important;
+  align-self:center!important;
+  justify-self:center!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  background:transparent!important;
+  border:0!important;
+  color:#737d90!important;
+  opacity:.45!important;
+  font-size:13px!important;
+}
+@media(max-width:420px){
+  .sets-header,
+  .set-line{
+    grid-template-columns:24px minmax(68px,1fr) minmax(68px,1fr) 40px 16px!important;
+    gap:6px!important;
+  }
+}
+
+
+/* FIX V4 — filas de series definitivas */
+.prev-tag,
+.smart-ex-panel,
+.set-prev{
+  display:none!important;
+}
+.sets-header,
+.set-row{
+  display:grid!important;
+  grid-template-columns:26px minmax(76px,1fr) minmax(76px,1fr) 40px 18px!important;
+  gap:7px!important;
+  align-items:center!important;
+}
+.sets-header{
+  border-bottom:1px solid #303746!important;
+  padding:0 0 7px 0!important;
+  margin:0 0 8px 0!important;
+}
+.sets-header span{
+  color:#9fb0d0!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  text-transform:uppercase!important;
+}
+.sets-header span:nth-child(4),
+.sets-header span:nth-child(5){
+  color:transparent!important;
+}
+.set-row{
+  min-height:46px!important;
+  padding:0!important;
+  margin-bottom:9px!important;
+}
+.set-num{
+  text-align:center!important;
+  font-size:11px!important;
+  white-space:nowrap!important;
+}
+.set-input{
+  height:40px!important;
+  min-height:40px!important;
+  line-height:40px!important;
+  margin:0!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+}
+.set-done-btn{
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  min-height:38px!important;
+  margin:0!important;
+  align-self:center!important;
+  justify-self:center!important;
+}
+.set-del-btn,
+.set-del-spacer{
+  width:18px!important;
+  height:38px!important;
+  min-width:18px!important;
+  min-height:38px!important;
+  margin:0!important;
+  padding:0!important;
+  align-self:center!important;
+  justify-self:center!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+.set-del-btn{
+  background:transparent!important;
+  border:0!important;
+  color:#737d90!important;
+  opacity:.45!important;
+  font-size:13px!important;
+}
+.set-del-btn:active{
+  opacity:1!important;
+}
+@media(max-width:420px){
+  .sets-header,
+  .set-row{
+    grid-template-columns:24px minmax(66px,1fr) minmax(66px,1fr) 40px 16px!important;
+    gap:6px!important;
+  }
+  .sets-area{
+    padding-left:10px!important;
+    padding-right:10px!important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -3071,7 +3403,7 @@ function migrateRoutinePro(){
 }
 
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.4';
 // ════════════════════════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════════════════════════
@@ -3167,16 +3499,8 @@ function exColor(ex){
   if(ex.type==='isolation') return'var(--green)';
   return'var(--amber)';
 }
-function getPrev(exId){
-  const h=gs('history')||[];
-  for(let i=h.length-1;i>=0;i--){
-    if(h[i].sets&&h[i].sets[exId]){
-      const d=h[i].sets[exId].filter(s=>s.done&&s.weight);
-      if(d.length){return`Último: ${Math.max(...d.map(s=>parseFloat(s.weight)||0))}kg`;}
-    }
-  }
-  return null;
-}
+function getPrev(exId){return null;}
+
 function getPrevSet(exId,idx){
   const h=gs('history')||[];
   for(let i=h.length-1;i>=0;i--){
@@ -3400,18 +3724,11 @@ function buildProgressionSuggestion(exId,repsTarget){
 
   return `<div class="smart-suggestion"><div class="smart-suggestion-top"><div class="smart-suggestion-title">Sugerencia próxima sesión</div><span class="smart-suggestion-badge ${mode}">${label}</span></div><div class="smart-suggestion-text">${text}</div></div>`;
 }
-function buildSmartExerciseInfo(ex){
-  return '';
-}
+function buildSmartExerciseInfo(ex){return '';}
 
-function safeBuildSmartExerciseInfo(ex){
-  try{
-    return buildSmartExerciseInfo(ex);
-  }catch(err){
-    console.error('Error pintando datos inteligentes del ejercicio', ex?.id, err);
-    return '';
-  }
-}
+
+function safeBuildSmartExerciseInfo(ex){return '';}
+
 
 function initSets(exId,n){
   if(!exId)return;
@@ -3590,6 +3907,52 @@ function renderHome(app){
     card.appendChild(row);
     app.appendChild(card);
   });
+}
+
+function openCreateRoutinePlanModal(){
+  openModal(`<div class="modal-hdr">Crear rutina<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="editor-panel">
+      <div class="editor-label">Nombre de la rutina</div>
+      <input class="editor-input" id="new-plan-name" placeholder="Ej. Rutina volumen 4 días" autocomplete="off">
+      <button class="btn btn-primary" style="margin-top:10px" onclick="createRoutinePlanFromForm()">Crear rutina</button>
+    </div>`);
+  setTimeout(()=>document.getElementById('new-plan-name')?.focus(),80);
+}
+function createRoutinePlanFromForm(){
+  const input=document.getElementById('new-plan-name');
+  const name=(input?.value||'').trim()||'Rutina nueva';
+  const plans=getRoutinePlans();
+  const plan=makeRoutinePlan(name,[]);
+  plans.push(plan);
+  saveRoutinePlans(plans);
+  closeModal();
+  setActiveRoutinePlan(plan.id,false);
+  toast('Rutina creada');
+  render();
+  setTimeout(()=>openRoutinePlanEditor(plan.id),80);
+}
+function duplicateRoutinePlan(planId){
+  const plans=getRoutinePlans();
+  const p=plans.find(x=>x.id===planId);
+  if(!p)return;
+  const copy=makeRoutinePlan((p.name||'Rutina')+' copia',JSON.parse(JSON.stringify(p.days||[])));
+  copy.days.forEach(d=>{
+    d.id='day_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
+    (d.exercises||[]).forEach(ex=>ex.id='ex_'+Date.now()+'_'+Math.random().toString(36).slice(2,6));
+  });
+  plans.push(copy);
+  saveRoutinePlans(plans);
+  toast('Rutina duplicada');
+  render();
+}
+function deleteRoutinePlan(planId){
+  const plans=getRoutinePlans();
+  if(plans.length<=1){toast('Debe quedar al menos una rutina');return;}
+  if(planId===getActiveRoutineId()){toast('Activa otra rutina antes de borrar esta');return;}
+  if(!confirm('¿Borrar esta rutina completa?'))return;
+  saveRoutinePlans(plans.filter(p=>p.id!==planId));
+  toast('Rutina borrada');
+  render();
 }
 
 function openRoutinePlanEditor(planId){
@@ -3787,12 +4150,8 @@ function buildExCard(ex){
     const sa=mk('div','sets-area');
     const smart=safeBuildSmartExerciseInfo(ex);
     if(smart) sa.appendChild(mk('div','smart-ex-panel',smart));
-    else{
-      const prev=getPrev(ex.id);
-      if(prev) sa.appendChild(mk('div','prev-tag',prev));
-    }
 
-    sa.appendChild(mk('div','sets-header','<span>Ser</span><span>Peso kg</span><span>Reps</span><span>Anterior</span><span></span>'));
+    sa.appendChild(mk('div','sets-header','<span>Ser</span><span>Peso kg</span><span>Reps</span><span></span><span></span>'));
 
     sets.forEach((s,idx)=>sa.appendChild(buildSetRow(ex,idx,s,sets)));
 
@@ -3814,20 +4173,38 @@ function buildSetRow(ex,idx,s,allSets){
 
   const wi=document.createElement('input');
   wi.className='set-input'+(s.weight?' filled':'');
-  wi.type='number'; wi.inputMode='decimal'; wi.placeholder='0'; wi.value=s.weight;
+  wi.type='number';
+  wi.inputMode='decimal';
+  wi.placeholder='0';
+  wi.value=s.weight||'';
   wi.disabled=!S.sessionActive;
-  wi.oninput=e=>{try{initSets(ex.id,idx+1);S.sessionSets[ex.id][idx].weight=e.target.value;saveSesh();updateSmartLiveComparison(ex.id,ex.repsTarget);}catch(err){console.error('Error peso serie',err);}};
+  wi.oninput=e=>{
+    try{
+      initSets(ex.id,idx+1);
+      S.sessionSets[ex.id][idx].weight=e.target.value;
+      saveSesh();
+      updateSmartLiveComparison(ex.id,ex.repsTarget);
+    }catch(err){console.error('Error peso serie',err);}
+  };
 
   const ri=document.createElement('input');
   ri.className='set-input'+(s.reps?' filled':'');
-  ri.type='number'; ri.inputMode='numeric'; ri.placeholder='0'; ri.value=s.reps;
+  ri.type='number';
+  ri.inputMode='numeric';
+  ri.placeholder='0';
+  ri.value=s.reps||'';
   ri.disabled=!S.sessionActive;
-  ri.oninput=e=>{try{initSets(ex.id,idx+1);S.sessionSets[ex.id][idx].reps=e.target.value;saveSesh();updateSmartLiveComparison(ex.id,ex.repsTarget);}catch(err){console.error('Error reps serie',err);}};
+  ri.oninput=e=>{
+    try{
+      initSets(ex.id,idx+1);
+      S.sessionSets[ex.id][idx].reps=e.target.value;
+      saveSesh();
+      updateSmartLiveComparison(ex.id,ex.repsTarget);
+    }catch(err){console.error('Error reps serie',err);}
+  };
 
-  row.appendChild(wi); row.appendChild(ri);
-
-  const cell=mk('div','');
-  cell.style.cssText='display:flex;flex-direction:column;gap:3px;align-items:center';
+  row.appendChild(wi);
+  row.appendChild(ri);
 
   const db=mk('button','set-done-btn'+(s.done?' done':''),s.done?'✓':'○');
   db.disabled=!S.sessionActive;
@@ -3870,16 +4247,26 @@ function buildSetRow(ex,idx,s,allSets){
     saveSesh();
     render();
   };
-  cell.appendChild(db);
+  row.appendChild(db);
 
-  if(S.sessionActive&&allSets.length>1){
+  if(S.sessionActive&&Array.isArray(allSets)&&allSets.length>1){
     const del=mk('button','set-del-btn','×');
-    del.onclick=()=>{if(Array.isArray(S.sessionSets[ex.id]))S.sessionSets[ex.id].splice(idx,1);saveSesh();render();};
-    cell.appendChild(del);
+    del.onclick=()=>{
+      if(Array.isArray(S.sessionSets[ex.id])){
+        S.sessionSets[ex.id].splice(idx,1);
+        saveSesh();
+        render();
+      }
+    };
+    row.appendChild(del);
+  }else{
+    row.appendChild(mk('div','set-del-spacer',''));
   }
-  row.appendChild(cell);
+
   return row;
 }
+
+
 
 // ── SWAP EXERCISE MODAL / PRO LIBRARY ──
 function openSwapModal(dayIdx, exId){
