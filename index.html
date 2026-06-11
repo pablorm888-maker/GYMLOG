@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#05070b">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="GYM">
+<meta name="apple-mobile-web-app-title" content="GymLog Pro">
 <meta name="mobile-web-app-capable" content="yes">
 
 <title>GymLog Pro</title>
@@ -3257,7 +3257,7 @@ function makeRoutinePlan(name='Rutina nueva', days=[]){
 }
 function getRoutinePlans(){
   const saved = gs('routinePlans');
-  if(saved && Array.isArray(saved) && saved.length) return saved;
+  if(Array.isArray(saved)) return saved;
   const oldRoutine = gs('routine');
   const baseDays = oldRoutine && Array.isArray(oldRoutine) && oldRoutine.length ? oldRoutine : JSON.parse(JSON.stringify(DEFAULT_ROUTINE));
   const plans = [{id:'routine_default',name:'Rutina principal',createdAt:Date.now(),days:baseDays}];
@@ -3265,18 +3265,23 @@ function getRoutinePlans(){
   if(!gs('activeRoutineId')) gw('activeRoutineId','routine_default');
   return plans;
 }
+
 function saveRoutinePlans(plans){ gw('routinePlans',plans); }
 function getActiveRoutineId(){
   const plans=getRoutinePlans();
+  if(!plans.length)return null;
   const id=gs('activeRoutineId');
   if(id && plans.some(p=>p.id===id)) return id;
   gw('activeRoutineId',plans[0].id);
   return plans[0].id;
 }
+
 function getActiveRoutinePlan(){
   const plans=getRoutinePlans();
-  return plans.find(p=>p.id===getActiveRoutineId()) || plans[0];
+  const activeId=getActiveRoutineId();
+  return plans.find(p=>p.id===activeId) || plans[0] || null;
 }
+
 function getRoutine(){
   const plan=getActiveRoutinePlan();
   return plan && Array.isArray(plan.days) ? plan.days : [];
@@ -3284,11 +3289,13 @@ function getRoutine(){
 function saveRoutine(r){
   const plans=getRoutinePlans();
   const id=getActiveRoutineId();
+  if(!id)return;
   const plan=plans.find(p=>p.id===id);
   if(plan) plan.days=r;
   saveRoutinePlans(plans);
   gw('routine', r); // compatibilidad con backups antiguos
 }
+
 function setActiveRoutinePlan(id,doRender=true){
   const plans=getRoutinePlans();
   if(!plans.some(p=>p.id===id))return;
@@ -3473,7 +3480,7 @@ function migrateRoutinePro(){
 }
 
 
-const APP_VERSION = '1.0.5';
+const APP_VERSION = '1.0.6';
 // ════════════════════════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════════════════════════
@@ -3936,7 +3943,7 @@ function render(){
 function renderHome(app){
   const plans=getRoutinePlans();
   const activeId=getActiveRoutineId();
-  const active=plans.find(p=>p.id===activeId)||plans[0];
+  const active=plans.find(p=>p.id===activeId)||plans[0]||null;
   const totalDays=active?.days?.length||0;
   const totalExercises=(active?.days||[]).reduce((a,d)=>a+(d.exercises?.length||0),0);
   const last=(gs('history')||[]).slice().sort((a,b)=>b.date-a.date)[0];
@@ -3944,12 +3951,21 @@ function renderHome(app){
   app.appendChild(mk('div','page-header',`<div class="app-title">Gym<em>Log</em></div><div class="page-sub">Inicio <span class="final-version-pill">v${APP_VERSION}</span></div>`));
 
   const hero=mk('div','lite-hero');
-  hero.innerHTML=`<div class="lite-title">${esc(active?.name||'Rutina activa')}</div>
-    <div class="lite-sub">${totalDays} días · ${totalExercises} ejercicios</div>
-    <div class="lite-actions">
-      <button class="btn btn-primary" onclick="S.page='gym';render()">Empezar entreno</button>
-      <button class="btn btn-ghost" onclick="openRoutinePlanEditor('${activeId}')">Editar rutina</button>
-    </div>`;
+  if(active){
+    hero.innerHTML=`<div class="lite-title">${esc(active.name||'Rutina activa')}</div>
+      <div class="lite-sub">${totalDays} días · ${totalExercises} ejercicios</div>
+      <div class="lite-actions">
+        <button class="btn btn-primary" onclick="S.page='gym';render()">Empezar entreno</button>
+        <button class="btn btn-ghost" onclick="openRoutinePlanEditor('${activeId}')">Editar rutina</button>
+      </div>`;
+  }else{
+    hero.innerHTML=`<div class="lite-title">Sin rutinas</div>
+      <div class="lite-sub">Crea una rutina para empezar a entrenar.</div>
+      <div class="lite-actions">
+        <button class="btn btn-primary" onclick="openCreateRoutinePlanModal()">Crear rutina</button>
+        <button class="btn btn-ghost" onclick="openLibraryManager()">Biblioteca</button>
+      </div>`;
+  }
   app.appendChild(hero);
 
   if(last){
@@ -3965,6 +3981,11 @@ function renderHome(app){
   actions.appendChild(newBtn); actions.appendChild(libBtn); app.appendChild(actions);
 
   app.appendChild(mk('div','exp-section-title','Rutinas'));
+  if(!plans.length){
+    app.appendChild(mk('div','hist-empty','No hay rutinas guardadas.<br>Pulsa “Nueva rutina” para crear una.'));
+    return;
+  }
+
   plans.forEach(plan=>{
     const days=plan.days||[];
     const exCount=days.reduce((a,d)=>a+(d.exercises?.length||0),0);
@@ -3975,9 +3996,16 @@ function renderHome(app){
     const edit=mk('button','btn btn-ghost btn-sm','Editar'); edit.onclick=()=>openRoutinePlanEditor(plan.id);
     row.appendChild(act); row.appendChild(edit);
     card.appendChild(row);
+
+    const del=mk('button','btn btn-danger btn-sm','Borrar rutina');
+    del.style.marginTop='8px';
+    del.onclick=()=>deleteRoutinePlan(plan.id);
+    card.appendChild(del);
+
     app.appendChild(card);
   });
 }
+
 
 function openCreateRoutinePlanModal(){
   openModal(`<div class="modal-hdr">Crear rutina<button class="modal-close" onclick="closeModal()">✕</button></div>
@@ -4017,13 +4045,47 @@ function duplicateRoutinePlan(planId){
 }
 function deleteRoutinePlan(planId){
   const plans=getRoutinePlans();
-  if(plans.length<=1){toast('Debe quedar al menos una rutina');return;}
-  if(planId===getActiveRoutineId()){toast('Activa otra rutina antes de borrar esta');return;}
-  if(!confirm('¿Borrar esta rutina completa?'))return;
-  saveRoutinePlans(plans.filter(p=>p.id!==planId));
+  const plan=plans.find(p=>p.id===planId);
+  if(!plan)return;
+
+  if(S?.sessionActive && planId===getActiveRoutineId()){
+    toast('Finaliza o descarta el entrenamiento activo antes de borrar esta rutina');
+    return;
+  }
+
+  if(!confirm(`¿Borrar la rutina "${plan.name||'sin nombre'}"?`))return;
+
+  const remaining=plans.filter(p=>p.id!==planId);
+  saveRoutinePlans(remaining);
+
+  const activeId=getActiveRoutineId();
+  if(!remaining.length){
+    gw('activeRoutineId',null);
+    ROUTINE=[];
+    S.dayIdx=0;
+    S.sessionSets={};
+    S.sessionHiddenEx=[];
+    S.openEx={};
+    closeModal();
+    toast('Rutina borrada. No queda ninguna rutina.');
+    render();
+    return;
+  }
+
+  if(planId===activeId || !remaining.some(p=>p.id===activeId)){
+    gw('activeRoutineId',remaining[0].id);
+  }
+
+  ROUTINE=getRoutine();
+  S.dayIdx=0;
+  S.sessionSets={};
+  S.sessionHiddenEx=[];
+  S.openEx={};
+  closeModal();
   toast('Rutina borrada');
   render();
 }
+
 
 function openRoutinePlanEditor(planId){
   const plans=getRoutinePlans(); const plan=plans.find(p=>p.id===planId); if(!plan)return;
@@ -4034,7 +4096,7 @@ function openRoutinePlanEditor(planId){
   (plan.days||[]).forEach((d,i)=>{
     html+=`<div class="editor-ex"><div class="editor-ex-top"><div><div class="editor-ex-name">${i+1}. ${esc(d.name)}</div><div class="editor-ex-meta">${esc(d.sub||'')} · ${(d.exercises||[]).length} ejercicios</div></div><div class="editor-mini-actions"><button class="editor-icon-btn" onclick="moveTrainingDay(${i},-1)">↑</button><button class="editor-icon-btn" onclick="moveTrainingDay(${i},1)">↓</button><button class="editor-icon-btn" onclick="openRoutineEditor(${i})">Editar</button><button class="editor-icon-btn danger" onclick="deleteTrainingDay(${i})">×</button></div></div></div>`;
   });
-  html+=`<button class="btn btn-success" onclick="createTrainingDay()">+ Añadir día</button><button class="btn btn-ghost" onclick="openLibraryManager()">📚 Abrir biblioteca</button><button class="btn btn-primary" onclick="closeModal();S.page='gym';render();">Ir a entrenar</button>`;
+  html+=`<button class="btn btn-success" onclick="createTrainingDay()">+ Añadir día</button><button class="btn btn-ghost" onclick="openLibraryManager()">📚 Abrir biblioteca</button><button class="btn btn-primary" onclick="closeModal();S.page='gym';render();">Ir a entrenar</button><button class="btn btn-danger" onclick="deleteRoutinePlan('${plan.id}')">Borrar rutina</button>`;
   openModal(html);
 }
 function saveRoutinePlanName(planId){
@@ -4056,6 +4118,15 @@ function moveTrainingDay(idx,dir){
 function renderGym(app){
   normalizeSessionState();
   const plan=getActiveRoutinePlan();
+  if(!plan){
+    app.appendChild(mk('div','page-header',`<div class="app-title">Gym<em>Log</em></div><div class="page-sub">Entreno</div>`));
+    app.appendChild(mk('div','hist-empty','No hay ninguna rutina creada.<br>Crea una rutina desde Inicio para empezar.'));
+    const b=mk('button','btn btn-primary','Crear rutina');
+    b.onclick=()=>openCreateRoutinePlanModal();
+    app.appendChild(b);
+    return;
+  }
+
   const day=ROUTINE[S.dayIdx];
   const{done,total}=countDone();
 
@@ -4116,54 +4187,26 @@ function renderGym(app){
     sb.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar entrenamiento`;
     sb.onclick=()=>{
       S.sessionActive=true; S.sessionStart=Date.now();
-      S.workoutElapsed=0; S.sessionSets={}; S.sessionHiddenEx=[]; S.restEndAt=null;
-      day.exercises.forEach(ex=>{initSets(ex.id,ex.sets); S.openEx[ex.id]=true;});
-      saveSesh(); render();
+      S.workoutElapsed=0; S.sessionSets={}; S.sessionHiddenEx=[]; S.sessionPrAlerts={};
+      visibleExercises(day).forEach(ex=>initSets(ex.id,ex.sets));
+      startWorkoutTimer(); saveSesh(); render();
     };
     btnWrap.appendChild(sb);
-
-    const proRow = mk('div','editor-actions');
-    proRow.style.cssText = 'margin:8px 0 0 0;display:flex;gap:8px';
-    const editBtn = mk('button','btn btn-ghost');
-    editBtn.style.flex = '1';
-    editBtn.innerHTML = '⚙ Editar rutina';
-    editBtn.onclick = () => openRoutineEditor(S.dayIdx);
-    const libBtn = mk('button','btn btn-ghost');
-    libBtn.style.flex = '1';
-    libBtn.innerHTML = '📚 Biblioteca';
-    libBtn.onclick = () => openLibraryManager();
-    proRow.appendChild(editBtn);
-    proRow.appendChild(libBtn);
-    btnWrap.appendChild(proRow);
-  } else {
-    const row = mk('div','');
-    row.style.cssText = 'display:flex;gap:8px';
-    const fb = mk('button','btn btn-success');
-    fb.style.flex = '1';
-    fb.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Finalizar`;
-    fb.onclick=()=>finishSession();
-    const db = mk('button','btn btn-danger');
-    db.style.flex = '1';
-    db.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Descartar`;
-    db.onclick=()=>{if(confirm('¿Descartar? Los datos no se guardarán.'))discardSession(true);};
+  }else{
+    const row=mk('div','workout-action-row');
+    const fb=mk('button','btn btn-success','Finalizar');
+    fb.onclick=finishSession;
+    const db=mk('button','btn btn-danger','Descartar');
+    db.onclick=()=>{if(confirm('¿Descartar entrenamiento?'))discardSession();};
     row.appendChild(fb); row.appendChild(db);
     btnWrap.appendChild(row);
   }
   app.appendChild(btnWrap);
 
   // Exercises
-  visibleExercises(day).forEach(ex=>{
-    try{
-      initSets(ex.id,ex.sets);
-      app.appendChild(buildExCard(ex));
-    }catch(err){
-      console.error('Error pintando ejercicio', ex?.id, err);
-      const fallback=mk('div','ex-card');
-      fallback.innerHTML=`<div class="ex-header"><div class="ex-left-bar" style="background:${exColor(ex)}"></div><div class="ex-info"><div class="ex-name">${esc(ex?.name||'Ejercicio')}</div><div class="ex-meta">Bloque avanzado desactivado para este ejercicio. La sesión sigue activa.</div></div></div>`;
-      app.appendChild(fallback);
-    }
-  });
+  visibleExercises(day).forEach(ex=>app.appendChild(buildExCard(ex)));
 }
+
 
 function discardSession(doRender=true){
   stopWorkoutTimer(); skipRest();
