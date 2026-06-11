@@ -3142,6 +3142,15 @@ body{
   margin-bottom:18px!important;
 }
 
+
+/* FIX 1.0.6 — el modal queda por encima del menú inferior al escribir */
+.modal-overlay{
+  z-index:20000!important;
+}
+body.modal-open .bottom-nav{
+  display:none!important;
+}
+
 </style>
 </head>
 <body>
@@ -3565,9 +3574,13 @@ function toast(msg){
 }
 function openModal(html){
   document.getElementById('modal-content').innerHTML=html;
+  document.body.classList.add('modal-open');
   document.getElementById('modal-overlay').classList.add('open');
 }
-function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
+function closeModal(){
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.classList.remove('modal-open');
+}
 function handleOvClick(e){if(e.target===document.getElementById('modal-overlay'))closeModal();}
 function setPage(p){S.page=p;render();}
 
